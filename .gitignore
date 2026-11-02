@@ -1,0 +1,23 @@
+.neon
+node_modules/
+.env.local
+# Dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Neon local configuration
+.neon
+
+# Generated Prisma Client
+api/src/generated/prisma/
+
+# Build output
+api/dist/
+api/coverage/
+
+# TypeScript build information
+*.tsbuildinfo
