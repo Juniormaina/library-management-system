@@ -1,0 +1,981 @@
+{
+  "info": {
+    "name": "Library Management System API",
+    "description": "Postman collection covering all library management system endpoints: genres, books, authentication, authorization, and user profile.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_variable_scope": "variables",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "genreId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "patron@example.com",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "password123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register PATRON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Patron User\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Response has user without password\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.password).to.be.undefined;",
+                  "  pm.expect(json.role).to.equal(\"PATRON\");",
+                  "});",
+                  "pm.test(\"Email matches\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.email).to.equal(pm.iterationData.get('userEmail') || pm.variables.get('userEmail'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login PATRON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has access_token\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.access_token).to.be.a('string');",
+                  "  pm.expect(json.access_token.length).to.be.above(0);",
+                  "});",
+                  "pm.test(\"Response has user without password\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.user.password).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Save access token\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.variables.set('accessToken', json.access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register with LIBRARIAN role (should default to PATRON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Self-Register Librarian\",\n  \"email\": \"selfreg@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"LIBRARIAN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Role defaults to PATRON, not LIBRARIAN\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.role).to.equal(\"PATRON\");",
+                  "});",
+                  "pm.test(\"Response has no password\", function () {",
+                  "  pm.expect(pm.response.json().password).to.be.undefined;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login with wrong password (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Error message returned\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.message).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Genres",
+      "item": [
+        {
+          "name": "Create Genre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fantasy\",\n  \"description\": \"Magical and imaginative stories\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Genre has id and name\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.be.a('string');",
+                  "  pm.expect(json.name).to.equal(\"Fantasy\");",
+                  "});",
+                  "pm.test(\"Save genreId\", function () {",
+                  "  pm.variables.set('genreId', pm.response.json().id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Duplicate Genre (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fantasy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 409\", function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"Error message about duplicate\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.message).to.include(\"already exists\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List All Genres",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/genres",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});",
+                  "pm.test(\"At least one genre exists\", function () {",
+                  "  pm.expect(pm.response.json().length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Genre by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/genres/{{genreId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres", "{{genreId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Genre matches requested ID\", function () {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.variables.get('genreId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Genre by Invalid ID (should fail)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/genres/00000000-0000-0000-0000-000000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres", "00000000-0000-0000-0000-000000000000"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Error message about not found\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.message).to.include(\"not found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Genre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fantasy Updated\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/genres/{{genreId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres", "{{genreId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Genre name updated\", function () {",
+                  "  pm.expect(pm.response.json().name).to.equal(\"Fantasy Updated\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Genre with Duplicate Name (should fail)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fiction\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/genres/{{genreId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres", "{{genreId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 409\", function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test(\"Error message about duplicate\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.message).to.include(\"already exists\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Genre",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/genres/{{genreId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["genres", "{{genreId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted genre has correct id\", function () {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.variables.get('genreId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "Create Book (LIBRARIAN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"The Hobbit\",\n  \"author\": \"J.R.R. Tolkien\",\n  \"isbn\": \"9780547928227\",\n  \"description\": \"A fantasy classic about Bilbo Baggins\",\n  \"publishedAt\": \"1937-09-21\",\n  \"available\": true,\n  \"genreId\": \"{{genreId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/books",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Book has required fields\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.be.a('string');",
+                  "  pm.expect(json.title).to.equal(\"The Hobbit\");",
+                  "  pm.expect(json.isbn).to.equal(\"9780547928227\");",
+                  "  pm.expect(json.genre.id).to.equal(pm.variables.get('genreId'));",
+                  "});",
+                  "pm.test(\"Save bookId\", function () {",
+                  "  pm.variables.set('bookId', pm.response.json().id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Book with Invalid Data (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"author\": \"Author\",\n  \"isbn\": \"bad-isbn\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/books",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List All Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has data and meta\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.meta).to.have.property('total');",
+                  "  pm.expect(json.meta).to.have.property('page');",
+                  "  pm.expect(json.meta).to.have.property('limit');",
+                  "  pm.expect(json.meta).to.have.property('totalPages');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter Books by Genre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books?genreId={{genreId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"],
+              "query": [
+                {
+                  "key": "genreId",
+                  "value": "{{genreId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"All returned books match genre\", function () {",
+                  "  const json = pm.response.json();",
+                  "  json.data.forEach(function (book) {",
+                  "    pm.expect(book.genre.id).to.equal(pm.variables.get('genreId'));",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books?search=hobbit",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "hobbit"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Search results contain matching title\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.length).to.be.above(0);",
+                  "  const titles = json.data.map(b => b.title.toLowerCase());",
+                  "  pm.expect(titles.some(t => t.includes(\"hobbit\"))).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginate Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books?page=1&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Pagination metadata present\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.meta.page).to.equal(1);",
+                  "  pm.expect(json.meta.limit).to.equal(5);",
+                  "  pm.expect(json.meta.totalPages).to.be.a('number');",
+                  "  pm.expect(json.data.length).to.be.at.most(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid Pagination Values (should fail)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books?page=0&limit=200",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/books/{{bookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "{{bookId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Book matches requested ID\", function () {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.variables.get('bookId'));",
+                  "  pm.expect(pm.response.json().genre).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Book (LIBRARIAN)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"The Hobbit - Revised Edition\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/books/{{bookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "{{bookId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Book title updated\", function () {",
+                  "  pm.expect(pm.response.json().title).to.equal(\"The Hobbit - Revised Edition\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Book (LIBRARIAN)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/books/{{bookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["books", "{{bookId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Deleted book has correct id\", function () {",
+                  "  pm.expect(pm.response.json().id).to.equal(pm.variables.get('bookId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authorization",
+      "item": [
+        {
+          "name": "Create Book as PATRON (should fail - 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Patron Book\",\n  \"author\": \"Patron Author\",\n  \"isbn\": \"9999999999999\",\n  \"genreId\": \"{{genreId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/books",
+              "host": ["{{baseUrl}}"],
+              "path": ["books"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 403\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Insufficient permissions message\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.message).to.include(\"Insufficient permissions\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Access Without Token (should fail - 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Profile (authenticated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Profile has no password\", function () {",
+                  "  pm.expect(pm.response.json().password).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Profile has email and role\", function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.email).to.be.a('string');",
+                  "  pm.expect(json.role).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
