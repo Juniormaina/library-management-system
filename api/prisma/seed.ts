@@ -21,6 +21,7 @@ type SeedBook = {
   description: string;
   publishedAt: Date;
   available: boolean;
+  totalCopies?: number;
   genreName: string;
 };
 
@@ -56,6 +57,7 @@ const books: SeedBook[] = [
       'A novel about justice, empathy, and moral courage in the American South.',
     publishedAt: new Date('1960-07-11'),
     available: true,
+    totalCopies: 3,
     genreName: 'Fiction',
   },
   {
@@ -66,6 +68,7 @@ const books: SeedBook[] = [
       'A dystopian story examining surveillance, truth, and authoritarian control.',
     publishedAt: new Date('1949-06-08'),
     available: true,
+    totalCopies: 2,
     genreName: 'Fiction',
   },
   {
@@ -86,6 +89,7 @@ const books: SeedBook[] = [
       'A portrait of ambition, wealth, and disillusionment during the Jazz Age.',
     publishedAt: new Date('1925-04-10'),
     available: false,
+    totalCopies: 0,
     genreName: 'Fiction',
   },
   {
@@ -126,6 +130,7 @@ const books: SeedBook[] = [
       'A sweeping tour of the universe, scientific discovery, and human curiosity.',
     publishedAt: new Date('1980-09-28'),
     available: false,
+    totalCopies: 0,
     genreName: 'Science',
   },
   {
@@ -166,6 +171,7 @@ const books: SeedBook[] = [
       'The story of Wilbur and Orville Wright and the invention of powered flight.',
     publishedAt: new Date('2015-05-05'),
     available: false,
+    totalCopies: 0,
     genreName: 'History',
   },
   {
@@ -239,6 +245,7 @@ async function main() {
         description: book.description,
         publishedAt: book.publishedAt,
         available: book.available,
+        totalCopies: book.totalCopies ?? 1,
         genreId: genre.id,
       },
       create: {
@@ -248,6 +255,7 @@ async function main() {
         description: book.description,
         publishedAt: book.publishedAt,
         available: book.available,
+        totalCopies: book.totalCopies ?? 1,
         genreId: genre.id,
       },
     });

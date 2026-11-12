@@ -85,6 +85,7 @@ export class BooksService {
             ? new Date(createBookDto.publishedAt)
             : undefined,
           available: createBookDto.available ?? true,
+          totalCopies: createBookDto.totalCopies ?? 1,
           genreId: createBookDto.genreId,
         },
         include: { genre: true },
@@ -124,6 +125,9 @@ export class BooksService {
           }),
           ...(updateBookDto.available !== undefined && {
             available: updateBookDto.available,
+          }),
+          ...(updateBookDto.totalCopies !== undefined && {
+            totalCopies: updateBookDto.totalCopies,
           }),
           ...(updateBookDto.genreId !== undefined && {
             genreId: updateBookDto.genreId,

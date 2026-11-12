@@ -25,6 +25,7 @@ const mockBook = {
   description: 'A test book',
   publishedAt: new Date(),
   available: true,
+  totalCopies: 1,
   genreId: 'genre-1',
   genre: mockGenre,
   createdAt: new Date(),
@@ -278,10 +279,54 @@ describe('BooksService', () => {
         description: undefined,
         publishedAt: undefined,
         available: true,
+        totalCopies: 1,
         genreId: 'genre-1',
       },
       include: { genre: true },
     });
+  });
+
+  it('should default totalCopies to 1 when omitted', async () => {
+    prisma.book.create.mockResolvedValue(mockBook);
+    await service.create({
+      title: 'Test Book',
+      author: 'Test Author',
+      isbn: '9780000000001',
+      genreId: 'genre-1',
+    });
+    expect(prisma.book.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ totalCopies: 1 }),
+      }),
+    );
+  });
+
+  it('should apply an explicit totalCopies value on create', async () => {
+    prisma.book.create.mockResolvedValue({ ...mockBook, totalCopies: 5 });
+    await service.create({
+      title: 'Test Book',
+      author: 'Test Author',
+      isbn: '9780000000001',
+      genreId: 'genre-1',
+      totalCopies: 5,
+    });
+    expect(prisma.book.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ totalCopies: 5 }),
+      }),
+    );
+  });
+
+  it('should update the copies field', async () => {
+    prisma.book.findUnique.mockResolvedValue(mockBook);
+    prisma.book.update.mockResolvedValue({ ...mockBook, totalCopies: 3 });
+    const result = await service.update('book-1', { totalCopies: 3 });
+    expect(result.totalCopies).toEqual(3);
+    expect(prisma.book.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ totalCopies: 3 }),
+      }),
+    );
   });
 
   it('should throw ConflictException on duplicate ISBN', async () => {
@@ -305,6 +350,108 @@ describe('BooksService', () => {
     prisma.book.delete.mockResolvedValue(mockBook);
     const result = await service.remove('book-1');
     expect(result).toEqual(mockBook);
+  });
+});
+
+describe('Book DTO validation', () => {
+  const { validate } = require('class-validator');
+
+  it('CreateBookDto accepts valid totalCopies', async () => {
+    const { randomUUID } = require('crypto');
+    const { CreateBookDto } = require('./books/dto/create-book.dto');
+    const dto = Object.assign(new CreateBookDto(), {
+      title: 'T',
+      author: 'A',
+      isbn: '1',
+      genreId: randomUUID(),
+      totalCopies: 3,
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('CreateBookDto defaults totalCopies to undefined (handled by service)', async () => {
+    const { randomUUID } = require('crypto');
+    const { CreateBookDto } = require('./books/dto/create-book.dto');
+    const dto = Object.assign(new CreateBookDto(), {
+      title: 'T',
+      author: 'A',
+      isbn: '1',
+      genreId: randomUUID(),
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+    expect(dto.totalCopies).toBeUndefined();
+  });
+
+  it('CreateBookDto accepts totalCopies of 0 for out-of-stock books', async () => {
+    const { randomUUID } = require('crypto');
+    const { CreateBookDto } = require('./books/dto/create-book.dto');
+    const dto = Object.assign(new CreateBookDto(), {
+      title: 'T',
+      author: 'A',
+      isbn: '1',
+      genreId: randomUUID(),
+      totalCopies: 0,
+    });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('CreateBookDto rejects negative totalCopies', async () => {
+    const { randomUUID } = require('crypto');
+    const { CreateBookDto } = require('./books/dto/create-book.dto');
+    const dto = Object.assign(new CreateBookDto(), {
+      title: 'T',
+      author: 'A',
+      isbn: '1',
+      genreId: randomUUID(),
+      totalCopies: -5,
+    });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'totalCopies')).toBe(true);
+  });
+
+  it('CreateBookDto rejects non-integer totalCopies', async () => {
+    const { randomUUID } = require('crypto');
+    const { CreateBookDto } = require('./books/dto/create-book.dto');
+    const dto = Object.assign(new CreateBookDto(), {
+      title: 'T',
+      author: 'A',
+      isbn: '1',
+      genreId: randomUUID(),
+      totalCopies: 2.5,
+    });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'totalCopies')).toBe(true);
+  });
+
+  it('UpdateBookDto accepts valid totalCopies', async () => {
+    const { UpdateBookDto } = require('./books/dto/update-book.dto');
+    const dto = Object.assign(new UpdateBookDto(), { totalCopies: 4 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('UpdateBookDto accepts totalCopies of 0 for out-of-stock books', async () => {
+    const { UpdateBookDto } = require('./books/dto/update-book.dto');
+    const dto = Object.assign(new UpdateBookDto(), { totalCopies: 0 });
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('UpdateBookDto rejects negative totalCopies', async () => {
+    const { UpdateBookDto } = require('./books/dto/update-book.dto');
+    const dto = Object.assign(new UpdateBookDto(), { totalCopies: -1 });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'totalCopies')).toBe(true);
+  });
+
+  it('UpdateBookDto rejects non-integer totalCopies', async () => {
+    const { UpdateBookDto } = require('./books/dto/update-book.dto');
+    const dto = Object.assign(new UpdateBookDto(), { totalCopies: 1.5 });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'totalCopies')).toBe(true);
   });
 });
 

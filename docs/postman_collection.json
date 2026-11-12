@@ -508,7 +508,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"The Hobbit\",\n  \"author\": \"J.R.R. Tolkien\",\n  \"isbn\": \"9780547928227\",\n  \"description\": \"A fantasy classic about Bilbo Baggins\",\n  \"publishedAt\": \"1937-09-21\",\n  \"available\": true,\n  \"genreId\": \"{{genreId}}\"\n}"
+              "raw": "{\n  \"title\": \"The Hobbit\",\n  \"author\": \"J.R.R. Tolkien\",\n  \"isbn\": \"9780547928227\",\n  \"description\": \"A fantasy classic about Bilbo Baggins\",\n  \"publishedAt\": \"1937-09-21\",\n  \"available\": true,\n  \"totalCopies\": 3,\n  \"genreId\": \"{{genreId}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/books",
@@ -524,13 +524,14 @@
                   "pm.test(\"Status is 201\", function () {",
                   "  pm.response.to.have.status(201);",
                   "});",
-                  "pm.test(\"Book has required fields\", function () {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.id).to.be.a('string');",
-                  "  pm.expect(json.title).to.equal(\"The Hobbit\");",
-                  "  pm.expect(json.isbn).to.equal(\"9780547928227\");",
-                  "  pm.expect(json.genre.id).to.equal(pm.variables.get('genreId'));",
-                  "});",
+"pm.test(\"Book has required fields\", function () {",
+                   "  const json = pm.response.json();",
+                   "  pm.expect(json.id).to.be.a('string');",
+                   "  pm.expect(json.title).to.equal(\"The Hobbit\");",
+                   "  pm.expect(json.isbn).to.equal(\"9780547928227\");",
+                   "  pm.expect(json.genre.id).to.equal(pm.variables.get('genreId'));",
+                   "  pm.expect(json.totalCopies).to.equal(3);",
+                   "});",
                   "pm.test(\"Save bookId\", function () {",
                   "  pm.variables.set('bookId', pm.response.json().id);",
                   "});"
@@ -569,17 +570,55 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status is 400\", function () {",
-                  "  pm.response.to.have.status(400);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "List All Books",
+"pm.test(\"Status is 400\", function () {",
+                   "  pm.response.to.have.status(400);",
+                   "});"
+                 ],
+                 "type": "text/javascript"
+               }
+             }
+           ]
+         },
+         {
+           "name": "Create Book with Invalid totalCopies (should fail)",
+           "request": {
+             "method": "POST",
+             "header": [
+               {
+                 "key": "Content-Type",
+                 "value": "application/json"
+               },
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{accessToken}}"
+               }
+             ],
+             "body": {
+               "mode": "raw",
+                "raw": "{\n  \"title\": \"Bad Copies\",\n  \"author\": \"Author\",\n  \"isbn\": \"9780000000099\",\n  \"totalCopies\": -1,\n  \"genreId\": \"{{genreId}}\"\n}"
+             },
+             "url": {
+               "raw": "{{baseUrl}}/books",
+               "host": ["{{baseUrl}}"],
+               "path": ["books"]
+             }
+           },
+           "event": [
+             {
+               "listen": "test",
+               "script": {
+                 "exec": [
+                   "pm.test(\"Status is 400\", function () {",
+                   "  pm.response.to.have.status(400);",
+                   "});"
+                 ],
+                 "type": "text/javascript"
+               }
+             }
+           ]
+         },
+         {
+           "name": "List All Books",
           "request": {
             "method": "GET",
             "header": [],

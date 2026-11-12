@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, Min } from 'class-validator';
 
 export class CreateBookDto {
   @IsString()
@@ -22,6 +22,11 @@ export class CreateBookDto {
 
   @IsOptional()
   available?: boolean;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  totalCopies?: number;
 
   @IsString()
   @IsNotEmpty()

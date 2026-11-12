@@ -39,6 +39,7 @@ model Book {
   description String?
   publishedAt DateTime?
   available   Boolean  @default(true)
+  totalCopies Int      @default(1)
 
   genreId String
   genre   Genre @relation(fields: [genreId], references: [id], onDelete: Restrict)

@@ -101,6 +101,7 @@ Seed behavior:
 - Uses **idempotent `upsert`** operations (safe to run multiple times).
 - Uses unique ISBN values and existing genre references.
 - Does **not** delete existing user data or records.
+- Sets `totalCopies` on each book (defaults to `1` when omitted); a few titles carry explicit values (e.g. `3`, `2`, or `0` for out-of-stock titles).
 
 ## Starting the NestJS Application
 
