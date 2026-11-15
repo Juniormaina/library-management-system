@@ -28,7 +28,7 @@ export default function HomePage() {
       </header>
 
       <div className="toolbar">
-        <SearchBar value={search} onChange={setSearch} />
+        <SearchBar value={search} onSearch={setSearch} />
         <GenreFilter genres={genres} selectedId={genreId} onSelect={setGenreId} />
       </div>
 

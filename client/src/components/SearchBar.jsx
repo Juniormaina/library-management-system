@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function SearchBar({ value, onChange }) {
+export default function SearchBar({ value, onSearch }) {
   const [local, setLocal] = useState(value);
   const timeoutRef = useRef(null);
 
@@ -25,7 +25,7 @@ export default function SearchBar({ value, onChange }) {
     }
 
     timeoutRef.current = setTimeout(() => {
-      onChange(next);
+      onSearch(next);
     }, 300);
   };
 
@@ -34,7 +34,7 @@ export default function SearchBar({ value, onChange }) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    onChange('');
+    onSearch('');
   };
 
   return (
