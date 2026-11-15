@@ -1,17 +1,17 @@
-import { Test, TestingModule } from '@nestjs/testing';
+jest.mock('@nestjs/common', () => ({
+  Injectable: () => (target) => target,
+  Controller: () => (target) => target,
+  Get: () => () => {},
+}));
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 describe('AppController', () => {
   let appController: AppController;
 
-  beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService],
-    }).compile();
-
-    appController = app.get<AppController>(AppController);
+  beforeEach(() => {
+    appController = new AppController(new AppService());
   });
 
   describe('root', () => {

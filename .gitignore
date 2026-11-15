@@ -1,6 +1,4 @@
 .neon
-node_modules/
-.env.local
 # Dependencies
 node_modules/
 
@@ -18,6 +16,9 @@ api/src/generated/prisma/
 # Build output
 api/dist/
 api/coverage/
+
+# Frontend build output
+client/dist/
 
 # TypeScript build information
 *.tsbuildinfo

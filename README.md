@@ -1,68 +1,123 @@
 # Library Management System
 
-NestJS + Prisma + PostgreSQL (Neon) backend for managing library users, genres, and books.
+A full-stack library catalog built over three incremental weeks: a **NestJS + Prisma + PostgreSQL (Neon)** API, and a **React + Vite** patron-facing catalog that consumes it.
+
+- **Week 1 — Data foundation:** Prisma schema, migrations, and an idempotent seed (roles, users, genres, books).
+- **Week 2 — API layer:** REST endpoints for auth, genres, books, and users, with JWT authentication and role-based authorization.
+- **Week 3 — Web client:** React single-page catalog with search, genre filtering, responsive book grid, and book detail pages.
+
+---
 
 ## Technology Stack
 
+### Backend (`api/`)
+
 - **Node.js 22**
-- **NestJS** (TypeScript)
-- **Prisma ORM 7.x** (`prisma`, `@prisma/client`)
+- **NestJS 12** (TypeScript)
+- **Prisma ORM 7.x** (`prisma`, `@prisma/client`) with the `prisma-client` generator
 - **PostgreSQL** hosted on **Neon**
-- **PostgreSQL driver/adapter:** `pg` + `@prisma/adapter-pg`
-- **Prisma 7 config:** `api/prisma.config.ts` (migrations path + datasource + seed command)
+- **Driver/adapter:** `pg` + `@prisma/adapter-pg`
+- **Auth:** `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`, `bcrypt`
+- **Validation:** `class-validator`, `class-transformer`
+
+### Frontend (`client/`)
+
+- **React 18** + **React DOM 18**
+- **Vite 6** (build tool / dev server)
+- **React Router 7** (`react-router-dom`)
+- Plain CSS (design tokens + responsive layout); no CSS framework
+
+---
 
 ## Project Structure
 
 ```text
 .
-├── api/                       # NestJS application
+├── api/                          # NestJS application
 │   ├── prisma/
-│   │   ├── migrations/        # Prisma migrations (preserved)
-│   │   ├── schema.prisma      # Prisma schema (Role, User, Genre, Book)
-│   │   └── seed.ts            # Idempotent database seed (4 genres, 16 books)
+│   │   ├── migrations/           # Prisma migrations (preserved)
+│   │   ├── schema.prisma         # Role, User, Genre, Book models
+│   │   └── seed.ts               # Idempotent seed (4 genres, 16 books)
 │   ├── src/
-│   │   ├── prisma/            # PrismaModule + PrismaService (PrismaPg adapter)
-│   │   └── generated/prisma/  # Generated Prisma client (gitignored)
-│   ├── prisma.config.ts       # Prisma 7 config (loads ../.env.local)
-│   ├── .env.example           # Placeholder env vars (no secrets)
+│   │   ├── auth/                 # register/login, JWT strategy, guards, roles
+│   │   ├── books/                # CRUD + search/filter/pagination
+│   │   ├── genres/               # CRUD
+│   │   ├── users/                # authenticated profile
+│   │   ├── prisma/               # PrismaModule + PrismaService (PrismaPg adapter)
+│   │   ├── generated/prisma/     # Generated Prisma client (gitignored)
+│   │   ├── app.module.ts
+│   │   └── main.ts               # bootstrap, CORS, global ValidationPipe
+│   ├── test/                     # e2e scaffold
+│   ├── prisma.config.ts          # Prisma 7 config (migrations + seed + datasource)
+│   ├── .env.example              # Placeholder env vars (no secrets)
 │   └── package.json
-├── .env.local                 # Local secrets (gitignored; do not commit)
+├── client/                       # React + Vite SPA
+│   ├── src/
+│   │   ├── api/client.js         # Typed fetch wrapper (books, book, genres)
+│   │   ├── components/           # SearchBar, GenreFilter, BookGrid, BookCard, Layout
+│   │   ├── pages/                # HomePage, BookDetail
+│   │   ├── App.jsx               # Routes
+│   │   ├── main.jsx              # BrowserRouter + styles
+│   │   └── styles.css            # Design tokens + all component styles
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── .env / .env.example       # VITE_API_URL
+│   └── package.json
+├── docs/
+│   └── postman_collection.json   # End-to-end API examples
+├── .env.local                    # Local secrets (gitignored; do not commit)
 └── README.md
 ```
 
+---
+
 ## Prerequisites
 
-- Node.js **22.x**
-- npm
+- **Node.js 22.x** and npm
 - Access to a PostgreSQL database (existing Neon project for this repo)
 
-## Installation
+---
+
+## Getting Started
+
+### 1. Backend setup
 
 ```bash
-# API dependencies
 cd api
 npm install
 ```
 
-## Environment Configuration
+### 2. Environment configuration
 
-1. Create local environment variables (do **not** commit secrets):
-   - Root: `.env.local` (used by `api/prisma.config.ts`)
-   - Or provide equivalent environment variables in your runtime environment.
-2. Use `api/.env.example` as the placeholder reference:
+Create local environment variables (**do not commit secrets**):
+
+- Root `.env.local` — used by `api/prisma.config.ts`, the seed script, and `api/src/main.ts`.
+- Or provide the equivalent variables in your runtime environment.
+
+Reference placeholders live in `api/.env.example`:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
+# PostgreSQL connection string (Neon) — used by NestJS runtime and the seed script.
+DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?channel_binding=require&sslmode=require"
+
+# Unpooled/direct connection string (Neon) — used by Prisma migrations/datasource.
+DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@HOST/DATABASE?channel_binding=require&sslmode=require"
+
+# Optional: NestJS HTTP port
 PORT=3000
+
+# Required: JWT signing secret for authentication tokens
+JWT_SECRET="your-super-secret-jwt-key-change-in-production"
 ```
 
 Notes:
+
 - `DATABASE_URL_UNPOOLED` is used by Prisma CLI/migrations via `api/prisma.config.ts`.
-- `DATABASE_URL` is used by NestJS `PrismaService` and the seed script.
+- `DATABASE_URL` is used by the NestJS `PrismaService` and the seed script.
+- `JWT_SECRET` signs access tokens; `JwtStrategy` reads it from the environment.
 - `.env`, `.env.local`, and `.env.*` are gitignored (except `.env.example`).
 
-## Database Migration Instructions
+### 3. Database migration
 
 Run Prisma CLI commands from `api/` (it loads `../.env.local`):
 
@@ -81,7 +136,7 @@ npx prisma migrate dev --name <descriptive_name>
 
 This repository preserves existing migration history in `api/prisma/migrations/`.
 
-## Database Seeding Instructions
+### 4. Database seeding
 
 The seed is configured in `api/prisma.config.ts` as:
 
@@ -97,37 +152,136 @@ npx prisma db seed
 ```
 
 Seed behavior:
+
 - Inserts **4 genres** and **16 books** (distributed across all genres).
 - Uses **idempotent `upsert`** operations (safe to run multiple times).
 - Uses unique ISBN values and existing genre references.
 - Does **not** delete existing user data or records.
 - Sets `totalCopies` on each book (defaults to `1` when omitted); a few titles carry explicit values (e.g. `3`, `2`, or `0` for out-of-stock titles).
 
-## Starting the NestJS Application
+### 5. Frontend setup
+
+```bash
+cd client
+npm install
+```
+
+`client/.env`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+---
+
+## Running the Application
+
+### Backend (NestJS)
 
 ```bash
 cd api
 
-# development
-npm run start
-
-# watch mode
-npm run start:dev
-
-# production (after build)
-npm run start:prod
+npm run start        # development
+npm run start:dev    # watch mode
+npm run start:prod   # production (after build)
 ```
 
-`api/src/main.ts` attempts to load `../.env.local` when `DATABASE_URL` is not already set, while preserving platform-provided environment variables in production.
+`api/src/main.ts` enables CORS, applies a global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`), and attempts to load `../.env.local` when `DATABASE_URL` is not already set (preserving platform-provided env vars in production).
+
+### Frontend (Vite)
+
+```bash
+cd client
+npm run dev      # dev server on http://localhost:5173
+```
+
+The client expects the API at `VITE_API_URL` (default `http://localhost:3000`). Start the backend first.
+
+---
+
+## API Overview
+
+Base URL: `http://localhost:3000`
+
+### Authentication
+
+| Method | Path              | Auth | Description                                  |
+| ------ | ----------------- | ---- | -------------------------------------------- |
+| POST   | `/auth/register`  | No   | Register a user. Role is always `PATRON`.    |
+| POST   | `/auth/login`     | No   | Log in; returns `{ access_token, user }`.    |
+
+Send the token as `Authorization: Bearer <access_token>` on protected routes.
+
+### Genres
+
+| Method | Path          | Auth | Description                     |
+| ------ | ------------- | ---- | ------------------------------- |
+| GET    | `/genres`     | No   | List all genres (ordered by name). |
+| GET    | `/genres/:id` | No   | Get a genre with its books.     |
+| POST   | `/genres`     | No   | Create a genre.                 |
+| PATCH  | `/genres/:id` | No   | Update a genre.                 |
+| DELETE | `/genres/:id` | No   | Delete a genre (blocked if it has books). |
+
+### Books
+
+| Method | Path          | Auth      | Description                                    |
+| ------ | ------------- | --------- | ---------------------------------------------- |
+| GET    | `/books`      | No        | List books with `genreId`, `search`, `page`, `limit` query params. |
+| GET    | `/books/:id`  | No        | Get a single book (includes genre).            |
+| POST   | `/books`      | LIBRARIAN | Create a book.                                 |
+| PATCH  | `/books/:id`  | LIBRARIAN | Update a book.                                 |
+| DELETE | `/books/:id`  | LIBRARIAN | Delete a book.                                 |
+
+`GET /books` returns a paginated envelope:
+
+```json
+{
+  "data": [ /* books */ ],
+  "meta": { "total": 16, "page": 1, "limit": 10, "totalPages": 2 }
+}
+```
+
+- `search` matches title or author (case-insensitive).
+- `page` defaults to `1`; `limit` defaults to `10` and is capped at `100`.
+
+### Users
+
+| Method | Path             | Auth | Description                  |
+| ------ | ---------------- | ---- | ---------------------------- |
+| GET    | `/users/profile` | Yes  | Current user's profile.      |
+
+### Authorization
+
+- Public registration always creates a `PATRON`; any client-supplied role is ignored.
+- `LIBRARIAN`-only routes are guarded by `JwtAuthGuard` + `RolesGuard`.
+- Requests without a token receive `401`; insufficient role receives `403`.
+
+A ready-to-import Postman collection with worked examples is in `docs/postman_collection.json`.
+
+---
 
 ## Building and Testing
 
+### Backend
+
 ```bash
 cd api
-npm run build
-npm run test
-npm run test:e2e    # if needed; uses configured e2e setup
+npm run build     # nest build
+npm run lint      # oxlint --type-aware src/ test/
+npm run test      # Jest unit tests
+npm run test:e2e  # e2e scaffold (requires a running database)
 ```
+
+### Frontend
+
+```bash
+cd client
+npm run build     # vite production build
+npm run lint      # oxlint src/
+npm run preview   # serve the production build
+```
+
+---
 
 ## Prisma Studio
 
@@ -137,6 +291,35 @@ npx prisma studio
 ```
 
 Use Prisma Studio to inspect `Genre`, `Book`, and `User` records.
+
+---
+
+## Week-by-Week Summary
+
+### Week 1 — Data foundation
+
+- `Role` enum (`PATRON`, `LIBRARIAN`), `User`, `Genre`, and `Book` models.
+- `Book.genreId` foreign key with `onDelete: Restrict` and indexes on `genreId` and `title`.
+- Initial migrations plus an added `totalCopies` column.
+- Idempotent seed: 4 genres, 16 books.
+
+### Week 2 — API layer
+
+- Auth: register (PATRON-only), login, JWT strategy, `JwtAuthGuard`, `RolesGuard`, `@Roles` decorator.
+- Genres CRUD with duplicate-name protection and delete guard.
+- Books CRUD with ISBN uniqueness, search, genre filter, and pagination.
+- Users profile endpoint behind JWT auth.
+- Global validation pipe, CORS, and Neon-backed `PrismaService`.
+
+### Week 3 — Web client
+
+- Vite + React 18 + React Router 7 SPA.
+- Typed API client (`getBooks`, `getBook`, `getGenres`).
+- Components: `SearchBar` (debounced 300ms), `GenreFilter`, `BookGrid` (loading/error/empty/skeleton states), `BookCard`, `Layout`.
+- Pages: `HomePage` (search + genre filter) and `BookDetail`.
+- Responsive stylesheet with design tokens, skeletons, badges, and reduced-motion support.
+
+---
 
 ## Schema Decisions
 
