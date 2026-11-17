@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useReadingList } from '../context/ReadingListContext';
 
 export default function BookDetail() {
   const { id } = useParams();
+  const { books, addBook, removeBook } = useReadingList();
   const [state, setState] = useState({
     book: null,
     loading: true,
@@ -79,6 +81,7 @@ export default function BookDetail() {
   const isAvailable = book.available && book.totalCopies > 0;
   const coverUrl = `https://covers.openlibrary.org/isbn/${book.isbn}-L.jpg`;
   const published = book.publishedAt ? new Date(book.publishedAt).toLocaleDateString() : null;
+  const inList = books.some((b) => b.id === book.id);
 
   return (
     <div className="page">
@@ -133,6 +136,18 @@ export default function BookDetail() {
               <span className="badge badge--available">Available</span>
             ) : (
               <span className="badge badge--unavailable">Unavailable</span>
+            )}
+          </div>
+
+          <div className="detail__actions">
+            {inList ? (
+              <button type="button" className="btn btn--secondary" onClick={() => removeBook(book.id)}>
+                Remove from reading list
+              </button>
+            ) : (
+              <button type="button" className="btn btn--primary" onClick={() => addBook(book)}>
+                Add to reading list
+              </button>
             )}
           </div>
 

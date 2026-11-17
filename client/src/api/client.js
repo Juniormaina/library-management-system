@@ -1,5 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
+const TOKEN_KEY = 'library_access_token';
+
 /**
  * @typedef {Object} Genre
  * @property {string} id
@@ -32,16 +34,83 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
  */
 
 /**
+ * @typedef {Object} AuthUser
+ * @property {string} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} role
+ */
+
+/**
+ * @typedef {Object} LoginResponse
+ * @property {string} access_token
+ * @property {AuthUser} user
+ */
+
+/**
+ * @typedef {Object} RegisterResponse
+ * @property {string} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} role
+ */
+
+/**
+ * @typedef {Object} UserProfile
+ * @property {string} id
+ * @property {string} name
+ * @property {string} email
+ * @property {string} role
+ * @property {string} createdAt
+ */
+
+/**
+ * Persist a JWT access token in localStorage.
+ * @param {string} token
+ */
+function setToken(token) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+/**
+ * Retrieve the persisted JWT access token, or null when absent.
+ * @returns {string | null}
+ */
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+/**
+ * Remove the persisted JWT access token.
+ */
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+/**
+ * Build request headers, injecting the Authorization bearer token when present.
+ * @param {Record<string, string> | undefined} [extra]
+ * @returns {Record<string, string>}
+ */
+function authHeaders(extra) {
+  const token = getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(extra ?? {}),
+  };
+}
+
+/**
  * @param {string} path
  * @param {RequestInit} [init]
  * @returns {Promise<any>}
  */
 async function request(path, init) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers),
-    },
+    headers: authHeaders(init?.headers),
     ...init,
   });
 
@@ -66,6 +135,13 @@ async function request(path, init) {
 }
 
 export const api = {
+  // ----- Token management (exposed for AuthContext) -----
+  setToken,
+  getToken,
+  clearToken,
+
+  // ----- Books -----
+
   /**
    * @param {{ genreId?: string, search?: string, page?: number, limit?: number }} [params]
    * @returns {Promise<PaginatedBooks>}
@@ -88,10 +164,46 @@ export const api = {
     return request(`/books/${id}`);
   },
 
+  // ----- Genres -----
+
   /**
    * @returns {Promise<Genre[]>}
    */
   getGenres() {
     return request(`/genres`);
+  },
+
+  // ----- Auth -----
+
+  /**
+   * @param {{ name: string, email: string, password: string, role?: string }} data
+   * @returns {Promise<RegisterResponse>}
+   */
+  register(data) {
+    return request(`/auth/register`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * @param {{ email: string, password: string }} data
+   * @returns {Promise<LoginResponse>}
+   */
+  login(data) {
+    return request(`/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // ----- Users -----
+
+  /**
+   * Requires a valid JWT.
+   * @returns {Promise<UserProfile>}
+   */
+  getProfile() {
+    return request(`/users/profile`);
   },
 };

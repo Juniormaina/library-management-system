@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useReadingList } from '../context/ReadingListContext';
 
 export default function BookCard({ book }) {
+  const { books, addBook, removeBook } = useReadingList();
   const isAvailable = book.available && book.totalCopies > 0;
   const coverUrl = `https://covers.openlibrary.org/isbn/${book.isbn}-L.jpg`;
+  const inList = books.some((b) => b.id === book.id);
 
   return (
     <article className="book-card">
@@ -44,6 +47,17 @@ export default function BookCard({ book }) {
           </div>
         </div>
       </Link>
+      <div className="book-card__actions">
+        {inList ? (
+          <button type="button" className="btn btn--secondary book-card__btn" onClick={() => removeBook(book.id)}>
+            Remove from reading list
+          </button>
+        ) : (
+          <button type="button" className="btn btn--primary book-card__btn" onClick={() => addBook(book)}>
+            Add to reading list
+          </button>
+        )}
+      </div>
     </article>
   );
 }
