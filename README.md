@@ -4,7 +4,7 @@ A full-stack library catalog built over three incremental weeks: a **NestJS + Pr
 
 - **Week 1 — Data foundation:** Prisma schema, migrations, and an idempotent seed (roles, users, genres, books).
 - **Week 2 — API layer:** REST endpoints for auth, genres, books, and users, with JWT authentication and role-based authorization.
-- **Week 3 — Web client:** React single-page catalog with search, genre filtering, responsive book grid, and book detail pages.
+- **Week 3 — Web client:** React single-page catalog with search, genre filtering, responsive book grid, book detail pages, reading list persistence, authentication flow (login/register), protected routes, and space booking form.
 
 ---
 
@@ -53,12 +53,13 @@ A full-stack library catalog built over three incremental weeks: a **NestJS + Pr
 │   └── package.json
 ├── client/                       # React + Vite SPA
 │   ├── src/
-│   │   ├── api/client.js         # Typed fetch wrapper (books, book, genres)
-│   │   ├── components/           # SearchBar, GenreFilter, BookGrid, BookCard, Layout
-│   │   ├── pages/                # HomePage, BookDetail
-│   │   ├── App.jsx               # Routes
-│   │   ├── main.jsx              # BrowserRouter + styles
-│   │   └── styles.css            # Design tokens + all component styles
+│   │   ├── api/client.js         # Typed fetch wrapper (books, genres, auth, users)
+│   │   ├── components/           # Navbar, BookCard, BookGrid, SearchBar, GenreFilter, ProtectedRoute, Layout
+│   │   ├── context/              # ReadingListContext (localStorage persistence)
+│   │   ├── pages/                # HomePage, BookDetail, LoginPage, RegisterPage, SpaceBookingPage
+│   │   ├── App.jsx               # Routes with auth guards
+│   │   ├── main.jsx              # BrowserRouter + styles + ReadingListProvider
+│   │   └── styles.css            # Design tokens + all component styles (forms, auth, book actions)
 │   ├── index.html
 │   ├── vite.config.js
 │   ├── .env / .env.example       # VITE_API_URL
@@ -250,6 +251,18 @@ Send the token as `Authorization: Bearer <access_token>` on protected routes.
 | ------ | ---------------- | ---- | ---------------------------- |
 | GET    | `/users/profile` | Yes  | Current user's profile.      |
 
+### Protected Client Routes
+
+The React client enforces the following route protections:
+
+| Route            | Protection        | Behavior                                              |
+| ---------------- | ----------------- | ----------------------------------------------------- |
+| `/spaces`        | `ProtectedRoute`  | Requires JWT; redirects to `/login` with `from` state |
+| `/login`         | `PublicOnlyRoute` | Redirects authenticated users to previous page        |
+| `/register`      | `PublicOnlyRoute` | Redirects authenticated users to previous page        |
+
+Login stores the JWT in `localStorage` (`library_access_token`) and redirects back to the originally requested page after authentication.
+
 ### Authorization
 
 - Public registration always creates a `PATRON`; any client-supplied role is ignored.
@@ -314,10 +327,12 @@ Use Prisma Studio to inspect `Genre`, `Book`, and `User` records.
 ### Week 3 — Web client
 
 - Vite + React 18 + React Router 7 SPA.
-- Typed API client (`getBooks`, `getBook`, `getGenres`).
-- Components: `SearchBar` (debounced 300ms), `GenreFilter`, `BookGrid` (loading/error/empty/skeleton states), `BookCard`, `Layout`.
-- Pages: `HomePage` (search + genre filter) and `BookDetail`.
-- Responsive stylesheet with design tokens, skeletons, badges, and reduced-motion support.
+- Typed API client (`getBooks`, `getBook`, `getGenres`, `login`, `register`, `getProfile`).
+- Context: `ReadingListContext` (localStorage persistence, duplicate prevention, add/remove/clear).
+- Components: `Navbar` (reading list count, auth state), `SearchBar` (debounced 300ms), `GenreFilter`, `BookGrid`, `BookCard` (add/remove reading list), `ProtectedRoute`, `PublicOnlyRoute`, `Layout`.
+- Pages: `HomePage` (search + genre filter), `BookDetail` (reading list actions), `LoginPage`, `RegisterPage`, `SpaceBookingPage` (controlled inputs, validation).
+- Auth flow: JWT in localStorage, protected routes with redirect preservation, public-only routes for login/register.
+- Responsive stylesheet with design tokens, forms, auth, skeletons, badges, and reduced-motion support.
 
 ---
 
